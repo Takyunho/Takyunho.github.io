@@ -195,7 +195,6 @@ input:-moz-placeholder { /* Firefox 18- */color:white; font-size: 20px;}
   background-color: transparent;
 }
 .pageLink img {
-  width: 50px;
   text-align: center;
   display: block;
   margin: auto;
