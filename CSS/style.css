@@ -200,7 +200,25 @@ input:-moz-placeholder { /* Firefox 18- */color:white; font-size: 20px;}
   margin: auto;
 }
 
-/* 로그인폼 숨기기 */
-.hidden {
-  display: none;
+.pageLink img:hover {
+  opacity: 0.7;
+  transition: all 0.5s;
+  transition-timing-function: ease;
+}
+
+@media screen and (max-width : 768px) {
+  .moveLink-form {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+
+    position: absolute;
+    top: auto;
+    right: auto;
+  }
+  .pageLink {
+    margin: 80px;
+  }
+
 }
