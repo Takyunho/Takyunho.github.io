@@ -207,6 +207,9 @@ input:-moz-placeholder { /* Firefox 18- */color:white; font-size: 20px;}
 }
 
 @media screen and (max-width : 768px) {
+  .main-clock {
+    font-size: 50px;
+  }
   .moveLink-form {
     display: flex;
     flex-direction: row;
@@ -214,7 +217,7 @@ input:-moz-placeholder { /* Firefox 18- */color:white; font-size: 20px;}
     align-items: center;
 
     position: absolute;
-    top: 260px;
+    top: 250px;
     right: 70px;
     
   }
