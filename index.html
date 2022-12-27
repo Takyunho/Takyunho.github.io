@@ -1,25 +1,200 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Preview</title>
-    <!-- Aframe을 위하여 -->
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <!-- Aframe AR을 위하여 -->
-    <script src="https://jeromeetienne.github.io/AR.js/aframe/build/aframe-ar.js"></script>
-    <!-- 애니메이션을 위하여 -->
-    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.0.0/dist/aframe-extras.min.js"></script>
-  </head>
+<head>
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<title>Hello AR!</title>
+	<!-- include three.js library -->
+	<script src='arModule/js_m/three.js'></script>
+	<!-- include jsartookit -->
+	<script src="./arModule/jsartoolkit5/artoolkit.min.js"></script>
+	<script src="./arModule/jsartoolkit5/artoolkit.api.js"></script>
+	<!-- include threex.artoolkit -->
+	<script src="./arModule/threex/threex-artoolkitsource.js"></script>
+	<script src="./arModule/threex/threex-artoolkitcontext.js"></script>
+	<script src="./arModule/threex/threex-arbasecontrols.js"></script>
+	<script src="./arModule/threex/threex-armarkercontrols.js"></script>
 
-  <body style="margin: 0px; overflow: hidden">
-    <a-scene embedded arjs>
-      <a-assets>
-        <a-asset-items id="box" src="./machine_008g.glb"></a-asset-items>
-      </a-assets>
-      <a-marker preset="custom" type="pattern" url="./pattern-aurora.patt">
-        <a-entity id="box-asset" rotate="0 0 90" gltf-model="#box"></a-entity>
-      </a-marker>
-      <a-entity camera></a-entity>
-    </a-scene>
-  </body>
+	<!-- three.js, jsartoolkit, threex.artoolkit 3개가 필요하다. -->
+
+</head>
+
+<body style='margin : 0px; overflow: hidden; font-family: Monospace;'>
+
+<!-- 
+  Example created by Lee Stemkoski: https://github.com/stemkoski
+  Based on the AR.js library and examples created by Jerome Etienne: https://github.com/jeromeetienne/AR.js/
+-->
+
+<script>
+
+var scene, camera, renderer, clock, deltaTime, totalTime;
+
+var arToolkitSource, arToolkitContext;
+
+var markerRoot1;
+
+var mesh1;
+
+initialize();
+animate();
+
+function initialize()
+{
+	// 장면
+	scene = new THREE.Scene();
+	// 조명
+	let ambientLight = new THREE.AmbientLight( 0xcccccc, 0.5 );
+	scene.add( ambientLight );
+	// 카메라
+	camera = new THREE.Camera();
+	scene.add(camera);
+	// 렌더러
+	renderer = new THREE.WebGLRenderer({
+		antialias : true,
+		alpha: true
+	});
+	renderer.setClearColor(new THREE.Color('lightgrey'), 0)
+	renderer.setSize( 640, 480 );
+	renderer.domElement.style.position = 'absolute'
+	renderer.domElement.style.top = '0px'
+	renderer.domElement.style.left = '0px'
+	document.body.appendChild( renderer.domElement );
+
+	clock = new THREE.Clock();
+	deltaTime = 0;
+	totalTime = 0;
+	
+	////////////////////////////////////////////////////////////
+	// setup arToolkitSource
+	// 위치 추적을 하기 위해 분석한 이미지입니다. 웹캠, 비디오 또는 이미지가 될 수 있습니다.
+	////////////////////////////////////////////////////////////
+
+	arToolkitSource = new THREEx.ArToolkitSource({
+		// 속성들 설명
+		// 소스의 타입 - ['webcam', 'image', 'video']
+		sourceType: "webcam",
+
+		// 소스의 URL - sourceType = image|video인 경우에 유효
+		// sourceUrl: null,
+
+		// 소스 이미지를 초기화하는 해상도
+		// sourceWidth: 640,
+		// sourceHeight: 480,
+
+		// 소스에 대해 표시되는 해상도
+		// displayWidth: 640,
+		// displayHeight: 480
+	});
+
+	function onResize() {
+		arToolkitSource.onResize()	
+		arToolkitSource.copySizeTo(renderer.domElement)	
+		if ( arToolkitContext.arController !== null )
+		{
+			arToolkitSource.copySizeTo(arToolkitContext.arController.canvas)	
+		}	
+	}
+
+	arToolkitSource.init(function onReady(){
+		onResize()
+	});
+	
+	// handle resize event
+	window.addEventListener('resize', function(){
+		onResize()
+	});
+	
+	////////////////////////////////////////////////////////////
+	// setup arToolkitContext
+	// 메인 엔진입니다. 실제로 이미지 소스에서 마커 위치를 찾습니다.
+	////////////////////////////////////////////////////////////	
+
+	// create atToolkitContext
+	arToolkitContext = new THREEx.ArToolkitContext({
+		// 속성들
+		// debug - arttoolkit 디버그 캔버스를 표시해야 하는 경우 true, 그렇지 않은 경우 false
+    // debug: false,
+		
+    // 감지 모드 - ['color', 'color_and_matrix', 'mono', 'mono_and_matrix']
+		detectionMode: 'mono',
+    
+    // 행렬 코드 유형 - 'matrix'로 끝나는 유효한 iif detectionMode - [3x3, 3x3_HAMMING63, 3x3_PARITY65, 4x4, 4x4_BCH_13_9_3, 4x4_BCH_13_5_5]
+    // matrixCodeType: '3x3',
+    
+		// 사용자 지정 마커의 패턴 비율
+    // patternRatio: 0.5,
+		
+    // 마커의 레이블 지정 모드 - ['black_region', 'white_region']
+    // black_region: 흰색 배경에 검은색 테두리가 있는 마커 / white_region: 검은색 배경에 흰색 테두리가 있는 마커
+    // labelingMode: 'black_region',
+		
+    // 카메라 매개변수의 URL
+    // cameraParametersUrl: THREEx.ArToolkitContext.baseURL + '../data/data/camera_para.dat',
+		cameraParametersUrl: './arModule/data/camera_para.dat',
+		
+    // 소스 이미지에서 포즈 감지의 최대 속도를 조정합니다.
+    // maxDetectionRate: 60,
+
+    // 소스 이미지에서 포즈를 감지하는 해상도
+    // canvasWidth: 640,
+    // canvasHeight: 480,
+
+    // 캔버스 복사에 이미지 스무딩 활성화 여부 - 기본값은 true
+    // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/imageSmoothingEnabled
+    // imageSmoothingEnabled : true,
+	});
+	
+	// 초기화 완료 시 프로젝션 매트릭스를 카메라에 복사
+	arToolkitContext.init( function onCompleted(){
+		camera.projectionMatrix.copy( arToolkitContext.getProjectionMatrix() );
+	});
+
+	////////////////////////////////////////////////////////////
+	// setup markerRoots
+	////////////////////////////////////////////////////////////
+
+	// build markerControls
+	markerRoot1 = new THREE.Group();
+	scene.add(markerRoot1);
+	let markerControls1 = new THREEx.ArMarkerControls(arToolkitContext, markerRoot1, {
+		type: 'pattern', patternUrl: "./arModule/data/patternAurora.patt",
+	})
+
+	let geometry1 = new THREE.PlaneBufferGeometry(1,1, 4,4);
+	let loader = new THREE.TextureLoader();
+	let texture = loader.load( './arModule/images/pattrenAurora.jpg', render );
+	let material1 = new THREE.MeshBasicMaterial( { map: texture } );
+	
+	mesh1 = new THREE.Mesh( geometry1, material1 );
+	mesh1.rotation.x = -Math.PI/2;
+	
+	markerRoot1.add( mesh1 );
+}
+
+
+function update()
+{
+	// update artoolkit on every frame
+	if ( arToolkitSource.ready !== false )
+		arToolkitContext.update( arToolkitSource.domElement );
+}
+
+
+function render()
+{
+	renderer.render( scene, camera );
+}
+
+
+function animate()
+{
+	requestAnimationFrame(animate);
+	deltaTime = clock.getDelta();
+	totalTime += deltaTime;
+	update();
+	render();
+}
+
+</script>
+
+</body>
 </html>
